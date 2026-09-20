@@ -94,15 +94,16 @@ app.use((err, req, res, next) => {
   res.status(500).json({ success: false, error: 'Internal server error' });
 });
 
-// ── Start Server ──────────────────────────────────────────────────
-app.listen(PORT, () => {
-  const isSandbox = process.env.PRACTO_ENV !== 'production';
-  console.log(`\n✅ Practo Muse Connector running on port ${PORT}`);
-  console.log(`📍 Environment: ${isSandbox ? 'SANDBOX (mock data)' : 'PRODUCTION'}`);
-  console.log(`🔗 Health check: http://localhost:${PORT}/health`);
-  console.log(`🔍 Search docs:  http://localhost:${PORT}/search/doctors`);
-  if (isSandbox) {
-    console.log(`\n⚠️  Running in SANDBOX mode — using mock data`);
-    console.log(`   Set PRACTO_ENV=production after getting real API keys\n`);
-  }
-});
+// Export for Vercel serverless
+module.exports = app;
+
+// Also listen locally when not on Vercel
+if (process.env.NODE_ENV !== 'production' || process.env.IS_LOCAL) {
+  app.listen(PORT, () => {
+    const isSandbox = process.env.PRACTO_ENV !== 'production';
+    console.log(`\n✅ Practo Muse Connector running on port ${PORT}`);
+    console.log(`📍 Environment: ${isSandbox ? 'SANDBOX (mock data)' : 'PRODUCTION'}`);
+    console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+    if (isSandbox) console.log(`\n⚠️  Running in SANDBOX mode — using mock data\n`);
+  });
+}
