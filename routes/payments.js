@@ -3,23 +3,31 @@ const router = express.Router();
 require('dotenv').config();
 
 // ── Payment Provider Setup ────────────────────────────────────────
-// Uses Razorpay by default (works in India instantly — no invite needed)
-// Switch to Stripe by setting PAYMENT_PROVIDER=stripe in .env
-
 const PROVIDER = process.env.PAYMENT_PROVIDER || 'razorpay';
 
-// Razorpay (recommended for India)
-const Razorpay = require('razorpay');
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
-});
+// Lazy-initialize payment clients only when real keys exist
+let razorpay = null;
+let stripe = null;
 
-// Stripe (optional — invite only in India)
-const stripe = process.env.STRIPE_SECRET_KEY &&
-  process.env.STRIPE_SECRET_KEY !== 'sk_test_your_stripe_secret_key_here'
-  ? require('stripe')(process.env.STRIPE_SECRET_KEY)
-  : null;
+const getRazorpay = () => {
+  if (!razorpay && process.env.RAZORPAY_KEY_ID &&
+      process.env.RAZORPAY_KEY_ID !== 'rzp_test_your_key_id_here') {
+    const Razorpay = require('razorpay');
+    razorpay = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID,
+      key_secret: process.env.RAZORPAY_KEY_SECRET,
+    });
+  }
+  return razorpay;
+};
+
+const getStripe = () => {
+  if (!stripe && process.env.STRIPE_SECRET_KEY &&
+      process.env.STRIPE_SECRET_KEY !== 'sk_test_your_stripe_secret_key_here') {
+    stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+  }
+  return stripe;
+};
 
 const isSandbox = () => {
   if (PROVIDER === 'razorpay') {
@@ -83,7 +91,7 @@ router.post('/create-intent', async (req, res) => {
   // ── PRODUCTION: RAZORPAY (default for India) ──
   if (PROVIDER === 'razorpay') {
     try {
-      const order = await razorpay.orders.create({
+      const order = await getRazorpay().orders.create({
         amount: amount * 100,           // Razorpay uses paise (₹1 = 100 paise)
         currency: process.env.RAZORPAY_CURRENCY || 'INR',
         receipt: `appt_${appointment_id}`,
@@ -115,9 +123,9 @@ router.post('/create-intent', async (req, res) => {
   }
 
   // ── PRODUCTION: STRIPE (optional) ──
-  if (PROVIDER === 'stripe' && stripe) {
+  if (PROVIDER === 'stripe' && getStripe()) {
     try {
-      const paymentIntent = await stripe.paymentIntents.create({
+      const paymentIntent = await getStripe().paymentIntents.create({
         amount: amount * 100,
         currency: process.env.STRIPE_CURRENCY || 'inr',
         payment_method_types: ['card', 'link'],
