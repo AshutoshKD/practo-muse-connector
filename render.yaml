@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: practo-muse-connector
+    runtime: node
+    plan: free
+    branch: main
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: PRACTO_API_BASE_URL
+        value: https://api.practo.com
+      - key: PRACTO_SANDBOX_URL
+        value: https://sandbox.api.practo.com
+      - key: PRACTO_ENV
+        value: sandbox
+      - key: PAYMENT_PROVIDER
+        value: razorpay
+      - key: RAZORPAY_CURRENCY
+        value: INR
+      - key: STRIPE_CURRENCY
+        value: inr
+      - key: PRACTO_API_KEY
+        sync: false
+      - key: PRACTO_CLIENT_ID
+        sync: false
+      - key: PRACTO_SITE_ID
+        sync: false
+      - key: CONNECTOR_SECRET_KEY
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RATE_LIMIT_WINDOW_MS
+        value: 900000
+      - key: RATE_LIMIT_MAX_REQUESTS
+        value: 100
